@@ -5,7 +5,9 @@ package com.bilibili.service;
 // @author zhangzhi
 // @description
 
+import com.alibaba.fastjson.JSONObject;
 import com.bilibili.dao.UserDao;
+import com.bilibili.domain.PageResult;
 import com.bilibili.domain.User;
 import com.bilibili.domain.UserInfo;
 import com.bilibili.domain.constant.UserConstant;
@@ -17,7 +19,10 @@ import com.mysql.cj.util.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class UserService {
@@ -127,5 +132,31 @@ public class UserService {
     public void updateUserInfos(UserInfo userInfo) {
         userInfo.setUpdateTime(new Date());
         userDao.updateUserInfos(userInfo);
+    }
+
+    // 查询用户信息
+    public User getUserById(Long followingId) {
+        return userDao.getUserById(followingId);
+    }
+
+    // 通过 id 批量查询用户详细信息
+    public List<UserInfo> getUserInfoByUserIds(Set<Long> userIdList) {
+        return userDao.getUserInfoByUserIds(userIdList);
+    }
+
+    // 分页查询用户信息
+    public PageResult<UserInfo> pageListUserInfos(JSONObject params) {
+        Integer no = params.getInteger("no");
+        Integer size = params.getInteger("size");
+        params.put("start", (no - 1) * size);
+        params.put("limit", size);
+        // 计算 total
+        Integer total = userDao.pageCountUserInfos(params);
+        List<UserInfo> list = new ArrayList<>();
+        if(total > 0){
+            // 查询用户信息
+            list = userDao.pageListUserInfos(params);
+        }
+        return new PageResult<>(total, list);
     }
 }

@@ -1,14 +1,18 @@
 package com.bilibili.api;
 
+import com.alibaba.fastjson.JSONObject;
 import com.bilibili.api.support.UserSupport;
 import com.bilibili.domain.JsonResponse;
+import com.bilibili.domain.PageResult;
 import com.bilibili.domain.User;
 import com.bilibili.domain.UserInfo;
+import com.bilibili.service.UserFollowingService;
 import com.bilibili.service.UserService;
 import com.bilibili.service.util.RSAUtil;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 // @date 2023/4/22
 // @time 20:12
@@ -23,7 +27,10 @@ public class UserApi {
     @Resource
     private UserSupport userSupport;
 
+    @Resource
+    private UserFollowingService userFollowingService;
 
+    // 获取用户信息
     @GetMapping("/users")
     public JsonResponse<User> getUserInfo(){
         Long userId = userSupport.getCurrentUserId();
@@ -71,5 +78,26 @@ public class UserApi {
         userInfo.setUserId(userId);
         userService.updateUserInfos(userInfo);
         return JsonResponse.success();
+    }
+
+    // 分页查询用户
+    @GetMapping("/user-infos")
+    public JsonResponse<PageResult<UserInfo>> pageListUserInfos(@RequestParam Integer no,
+                                                                @RequestParam Integer size,
+                                                                String nick){
+        Long userId = userSupport.getCurrentUserId();
+        JSONObject params = new JSONObject();
+        params.put("no", no);
+        params.put("size", size);
+        params.put("nick", nick);
+        params.put("userId", userId);
+        PageResult<UserInfo> result = userService.pageListUserInfos(params);
+        if(result.getTotal() > 0){
+            // 如果用户已经关注过，设置 followed 为 true
+            // 增加用户体验
+            List<UserInfo> checkedUserInfoList = userFollowingService.checkFollowingStatus(result.getList(), userId);
+            result.setList(checkedUserInfoList);
+        }
+        return new JsonResponse<>(result);
     }
 }
