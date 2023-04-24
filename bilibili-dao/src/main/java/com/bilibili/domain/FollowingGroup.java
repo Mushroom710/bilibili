@@ -3,32 +3,26 @@ package com.bilibili.domain;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
-// @date 2023/4/22
-// @time 20:08
+// @date 2023/4/23
+// @time 21:09
 // @author zhangzhi
 // @description
-
 @Data
-public class UserInfo {
-
+public class FollowingGroup {
     private Long id;
 
     private Long userId;
 
-    private String nick;
+    private String name;
 
-    private String avatar;
-
-    private String sign;
-
-    private String gender;
-
-    private String birth;
+    private String type;
 
     private Date createTime;
 
     private Date updateTime;
 
-    private Boolean followed;
+    private List<UserInfo> followingUserInfoList;
+
 }
