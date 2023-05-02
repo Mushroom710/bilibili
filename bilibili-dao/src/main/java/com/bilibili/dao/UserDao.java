@@ -3,6 +3,7 @@ package com.bilibili.dao;
 import com.bilibili.domain.User;
 import com.bilibili.domain.UserInfo;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 import java.util.Map;
@@ -33,5 +34,5 @@ public interface UserDao {
 
     Integer pageCountUserInfos(Map<String, Object> params);
 
-    List<UserInfo> pageListUserInfos(Map<String, Object> params);
+    List<UserInfo> pageListUserInfos(@Param("params") Map<String, Object> params);
 }
