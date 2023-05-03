@@ -12,7 +12,9 @@ import com.bilibili.service.util.RSAUtil;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 // @date 2023/4/22
 // @time 20:12
@@ -99,5 +101,29 @@ public class UserApi {
             result.setList(checkedUserInfoList);
         }
         return new JsonResponse<>(result);
+    }
+
+    // 双令牌实现登录升级
+    @PostMapping("/user-dts")
+    public JsonResponse<Map<String, Object>> loginForDts(@RequestBody User user) throws Exception {
+        Map<String, Object> map = userService.loginForDts(user);
+        return new JsonResponse<>(map);
+    }
+
+    // 双令牌登出
+    @DeleteMapping("/refresh-tokens")
+    public JsonResponse<String> logout(HttpServletRequest request){
+        String refreshToken = request.getHeader("refreshToken");
+        Long userId = userSupport.getCurrentUserId();
+        userService.logout(refreshToken, userId);
+        return JsonResponse.success();
+    }
+
+    // 根据 refreshToken 刷新 accessToken
+    @PostMapping("/access-tokens")
+    public JsonResponse<String> refreshAccessToken(HttpServletRequest request) throws Exception {
+        String refreshToken = request.getHeader("refreshToken");
+        String accessToken = userService.refreshAccessToken(refreshToken);
+        return new JsonResponse<>(accessToken);
     }
 }

@@ -8,6 +8,7 @@ package com.bilibili.service;
 import com.alibaba.fastjson.JSONObject;
 import com.bilibili.dao.UserDao;
 import com.bilibili.domain.PageResult;
+import com.bilibili.domain.RefreshTokenDetail;
 import com.bilibili.domain.User;
 import com.bilibili.domain.UserInfo;
 import com.bilibili.domain.constant.UserConstant;
@@ -17,12 +18,10 @@ import com.bilibili.service.util.RSAUtil;
 import com.bilibili.service.util.TokenUtil;
 import com.mysql.cj.util.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -30,6 +29,10 @@ public class UserService {
     @Resource
     private UserDao userDao;
 
+    @Resource
+    private UserAuthService userAuthService;
+
+    @Transactional
     public void addUser(User user) {
         String phone = user.getPhone();
         // 检查用户手机号
@@ -69,6 +72,9 @@ public class UserService {
         userInfo.setCreateTime(now);
         userInfo.setUpdateTime(now);
         userDao.addUserInfo(userInfo);
+
+        // 添加用户默认权限角色
+        userAuthService.addUserDefaultRole(user.getId());
     }
 
     // 根据手机号查询用户账号信息
@@ -158,5 +164,62 @@ public class UserService {
             list = userDao.pageListUserInfos(params);
         }
         return new PageResult<>(total, list);
+    }
+
+    // 双令牌实现登录升级
+    @Transactional
+    public Map<String, Object> loginForDts(User user) throws Exception {
+        String phone = user.getPhone();
+        // 判断手机号
+        if(StringUtils.isNullOrEmpty(phone)){
+            throw new ConditionException("手机号不能为空！");
+        }
+        User dbUser = this.getUserByPhone(phone);
+        // 用户是否注册
+        if(dbUser == null){
+            throw new ConditionException("该用户未注册！");
+        }
+        String password = user.getPassword();
+        String rawPassword = "";
+        // 拿到用户登录密码
+        try{
+            rawPassword = RSAUtil.decrypt(password);
+        }catch (Exception e){
+            throw new ConditionException("密码解密失败！");
+        }
+        String salt = dbUser.getSalt();
+        String md5Password = MD5Util.sign(rawPassword, salt, "UTF-8");
+        // 比较密码和数据库密码是否一样
+        if(!md5Password.equals(dbUser.getPassword())){
+            throw new ConditionException("密码错误！");
+        }
+
+        Long userId = dbUser.getId();
+        // 返回登录令牌
+        // 接入 token
+        String accessToken = TokenUtil.generateToken(userId);
+        // 刷新 token
+        String refreshToken = TokenUtil.generateRefreshToken(userId);
+        // 保存 refreshToken 到数据库
+        userDao.deleteRefreshToken(refreshToken, userId);
+        userDao.addRefreshToken(refreshToken, userId, new Date());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("accessToken", accessToken);
+        result.put("refreshToken", refreshToken);
+        return result;
+    }
+
+    public void logout(String refreshToken, Long userId) {
+        userDao.deleteRefreshToken(refreshToken, userId);
+    }
+
+    public String refreshAccessToken(String refreshToken) throws Exception {
+        RefreshTokenDetail refreshTokenDetail = userDao.getRefreshTokenDetail(refreshToken);
+        if(refreshTokenDetail == null){
+            throw new ConditionException("555", "token过期！");
+        }
+        Long userId = refreshTokenDetail.getUserId();
+        return TokenUtil.generateToken(userId);
     }
 }
