@@ -216,10 +216,14 @@ public class UserService {
 
     public String refreshAccessToken(String refreshToken) throws Exception {
         RefreshTokenDetail refreshTokenDetail = userDao.getRefreshTokenDetail(refreshToken);
-        if(refreshTokenDetail == null){
+        if (refreshTokenDetail == null) {
             throw new ConditionException("555", "token过期！");
         }
         Long userId = refreshTokenDetail.getUserId();
         return TokenUtil.generateToken(userId);
+    }
+
+    public List<UserInfo> batchGetUserInfoByUserIds(Set<Long> userIdList) {
+        return userDao.batchGetUserInfoByUserIds(userIdList);
     }
 }

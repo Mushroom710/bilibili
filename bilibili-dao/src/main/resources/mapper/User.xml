@@ -174,12 +174,22 @@
             )
     </insert>
 
-    <select id="getRefreshTokenDetail" parameterType="java.lang.String" resultType="com.bilibili.domain.RefreshTokenDetail">
+    <select id="getRefreshTokenDetail" parameterType="java.lang.String"
+            resultType="com.bilibili.domain.RefreshTokenDetail">
+        select *
+        from t_refresh_token
+        where refreshToken = #{refreshToken}
+    </select>
+
+    <select id="batchGetUserInfoByUserIds" resultType="com.bilibili.domain.UserInfo">
         select
-            *
+        *
         from
-            t_refresh_token
+        t_user_info
         where
-            refreshToken = #{refreshToken}
+        userId in
+        <foreach collection="userIdList" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
     </select>
 </mapper>
