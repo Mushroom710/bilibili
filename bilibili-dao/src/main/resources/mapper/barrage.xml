@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.bilibili.dao.BarrageDao">
+
+    <insert id="addBarrage" parameterType="com.bilibili.domain.Barrage">
+        insert into t_barrage(userid,
+                              videoId,
+                              content,
+                              barrageTime,
+                              createTime)
+        values (#{userId},
+                #{videoId},
+                #{content},
+                #{barrageTime},
+                #{createTime})
+    </insert>
+
+    <select id="getBarrage" parameterType="java.util.Map" resultType="com.bilibili.domain.Barrage">
+        select
+        *
+        from
+        t_barrage
+        where
+        videoId = #{videoId}
+        <if test="startTime != null and startTime != '' ">
+            and createTime <![CDATA[>=]]]> #{startTime}
+        </if>
+        <if test="endTime != null and endTime != '' ">
+            and createTime <![CDATA[<=]]]> #{endTime}
+        </if>
+    </select>
+</mapper>
